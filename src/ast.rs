@@ -88,4 +88,5 @@ pub enum Op {
     Eq,
     Lt,
     Gt,
+    //Not,
 }

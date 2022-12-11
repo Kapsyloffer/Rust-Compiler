@@ -3,7 +3,26 @@
 use crate::ast::*;
 use std::fmt;
 
+#[derive(Debug)]
+pub enum VmErr {
+    Err(String),
+}
 // Back-port utility functions/traits for your AST here.
+impl Literal {
+    pub fn get_int(&self) -> Result<i32, VmErr> {
+        match self {
+            Literal::Int(i) => Ok(*i),
+            _ => Err(VmErr::Err(format!("cannot get integer from {:?}", self))),
+        }
+    }
+
+    pub fn get_bool(&self) -> Result<bool, VmErr> {
+        match self {
+            Literal::Bool(b) => Ok(*b),
+            _ => Err(VmErr::Err(format!("cannot get Bool from {:?}", self))),
+        }
+    }
+}
 
 impl Expr 
 {
@@ -28,6 +47,7 @@ impl fmt::Display for Op
             Op::Eq => "==",
             Op::Lt => "<",
             Op::Gt => ">",
+            //Op::Not => "!",
         };
         write!(f, "{}", s)
     }
@@ -44,7 +64,7 @@ impl fmt::Display for Literal {
             Literal::Bool(b) => b.to_string(),
             Literal::Int(i) => i.to_string(),
             Literal::Unit => "()".to_string(),
-            Literal::String(content) => (content.to_string()),
+            Literal::String(content) => content.to_string(),
         };
         write!(f, "{}", s)
     }
@@ -93,7 +113,8 @@ impl fmt::Display for Expr
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
     {
-        let s = match self{
+        let s = match self
+        {
             Expr::Call(_,_) => todo!(),
             Expr::Ident(a) => a.to_owned(),
             Expr::Lit(l) => format!("{}", l),
@@ -102,7 +123,6 @@ impl fmt::Display for Expr
             Expr::IfThenElse(c, f, e) => format!("if {} {{\n{}}}\n else\n {{ {:?} }}", c, &f, e),
             Expr::Block(_) => unimplemented!(),
             Expr::UnOp(_, _) => unimplemented!(),
-            //Expr::While(c, b) => format!("while {} \n {{{}}}", c, b),
             //Expr::Not(c) => format!("!{}", c),
         };
         write!(f, "{}", s)
@@ -129,9 +149,12 @@ impl fmt::Display for Mutable {
     }
 }
 
-impl fmt::Display for Parameter {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+impl fmt::Display for Parameter 
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
+        let _s = format!("{}:: {}", self.id, self.ty);
+        write!(f, "{}", _s)
     }
 }
 
