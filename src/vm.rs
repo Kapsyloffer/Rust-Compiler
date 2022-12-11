@@ -2,6 +2,8 @@ use crate::ast::{Block, Expr, FnDeclaration, Literal, Op, Prog};
 use crate::common::Eval;
 use crate::env::{Env, Ref};
 use crate::error::Error;
+use std::collections::HashMap;
+use std::collections::VecDeque;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Val {
@@ -10,6 +12,13 @@ pub enum Val {
     UnInit,
     Mut(Box<Val>),
 }
+
+#[derive(Debug)]
+pub enum VmErr {
+    Err(String),
+}
+
+type VarEnv = VecDeque<HashMap<String, (Option<Literal>, Option<FnDeclaration>)>>;
 
 // Helpers for Val
 // Alternatively implement the TryFrom trait
@@ -29,12 +38,52 @@ impl Val {
     }
 }
 
-// Helper for Op
-impl Op {
-    // Evaluate operator to literal
-    pub fn eval(&self, left: Val, right: Val) -> Result<Val, Error> {
-        todo!();
+impl Literal {
+    pub fn get_int(&self) -> Result<i32, VmErr> {
+        match self {
+            Literal::Int(i) => Ok(*i),
+            _ => Err(VmErr::Err(format!("cannot get integer from {:?}", self))),
+        }
     }
+
+    pub fn get_bool(&self) -> Result<bool, VmErr> {
+        match self {
+            Literal::Bool(b) => Ok(*b),
+            _ => Err(VmErr::Err(format!("cannot get Bool from {:?}", self))),
+        }
+    }
+}
+
+// Helper for Op
+impl Op 
+{
+    // Evaluate operator to literal
+    pub fn eval(&self, left: Literal, right: Literal) -> Result<Literal, VmErr> 
+    {
+        use Literal::{Bool, Int};
+        match self 
+        {
+            Op::Add => Ok(Int(left.get_int()? + right.get_int()?)),
+            Op::Sub => Ok(Int(left.get_int()? - right.get_int()?)),
+            Op::Mul => Ok(Int(left.get_int()? * right.get_int()?)),
+            Op::Div => Ok(Int(left.get_int()? / right.get_int()?)),
+            Op::And => Ok(Bool(left.get_bool()? && right.get_bool()?)),
+            Op::Or => Ok(Bool(left.get_bool()? || right.get_bool()?)),
+            Op::Eq => Ok(Bool(left == right)), // overloading
+            Op::Lt => Ok(Bool(left.get_int()? < right.get_int()?)),
+            Op::Gt => Ok(Bool(left.get_int()? > right.get_int()?)),
+        }
+    }
+   /* pub fn notEval(&self, arg:Literal) -> Result<Literal, VmErr>
+    {
+        match self
+        {
+            //Negates the bool of argument
+            //Op::Not => Literal::Bool(!arg.get_bool()),
+            Op::Not => Ok(Literal::Bool(!arg.get_bool()?)),
+            _=> unimplemented!(),
+        }
+    }*/ 
 }
 
 impl Eval<Val> for Expr {

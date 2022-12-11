@@ -5,42 +5,20 @@ use std::fmt;
 
 // Back-port utility functions/traits for your AST here.
 
-impl Expr {
-    pub fn bin_op(o: Op, left: Expr, right: Expr) -> Self {
+impl Expr 
+{
+    pub fn bin_op(o: Op, left: Expr, right: Expr) -> Self 
+    {
         Expr::BinOp(o, Box::new(left), Box::new(right))
     }
 }
-
-impl From<Literal> for Expr {
-    fn from(lit: Literal) -> Self {
-        Expr::Lit(lit)
-    }
-}
-
-impl From<i32> for Expr {
-    fn from(i: i32) -> Self {
-        Expr::Lit(Literal::Int(i))
-    }
-}
-
-impl From<i32> for Literal {
-    fn from(i: i32) -> Self {
-        Literal::Int(i)
-    }
-}
-
-impl From<Expr> for Literal {
-    fn from(e: Expr) -> Self {
-        match e {
-            Expr::Lit(l) => l,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl fmt::Display for Op {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
+// Display implementation
+impl fmt::Display for Op 
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
+        let s = match self 
+        {
             Op::Add => "+",
             Op::Sub => "-",
             Op::Mul => "*",
@@ -61,7 +39,14 @@ impl fmt::Display for Op {
 
 impl fmt::Display for Literal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        let s = match *self 
+        {
+            Literal::Bool(b) => b.to_string(),
+            Literal::Int(i) => i.to_string(),
+            Literal::Unit => "()".to_string(),
+            Literal::String(content) => (content.to_string()),
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -75,9 +60,18 @@ fn display_literal() {
     assert_eq!(format!("{}", Literal::Unit), "()");
 }
 
-impl fmt::Display for Type {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+impl fmt::Display for Type 
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
+        let s = match *self{
+            Type::I32 => "i32",
+            Type::Bool => "bool",
+            Type::Unit => "()",
+            Type::String => "str",
+            Type::Ref(_) => "ref",
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -95,15 +89,37 @@ impl fmt::Display for UnOp {
     }
 }
 
-impl fmt::Display for Expr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+impl fmt::Display for Expr 
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
+        let s = match self{
+            Expr::Call(_,_) => todo!(),
+            Expr::Ident(a) => a.to_owned(),
+            Expr::Lit(l) => format!("{}", l),
+            Expr::BinOp(op, l, r) => format!("{} {} {}", l, op, r),
+            Expr::Par(e) => format!("({})", e),
+            Expr::IfThenElse(c, f, e) => format!("if {} {{\n{}}}\n else\n {{ {:?} }}", c, &f, e),
+            Expr::Block(_) => unimplemented!(),
+            Expr::UnOp(_, _) => unimplemented!(),
+            //Expr::While(c, b) => format!("while {} \n {{{}}}", c, b),
+            //Expr::Not(c) => format!("!{}", c),
+        };
+        write!(f, "{}", s)
     }
 }
 
-impl fmt::Display for Block {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+impl fmt::Display for Block 
+{
+    #[allow(unused_variables)]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
+        let mut s = String::new();
+        for stm in &self.statements
+        {
+            s.push_str(&stm.to_string());
+        }
+        write!(f, "{}", s)
     }
 }
 
@@ -143,9 +159,34 @@ impl fmt::Display for Prog {
     }
 }
 
-impl fmt::Display for Statement {
+impl fmt::Display for Statement 
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        let s = match self{
+            Statement::Let(_mut, ex1, _type, ex2) => 
+            {
+                let t = match _type 
+                {
+                    Some(t) => format!(": {}", t),
+                    None => "".to_string(),
+                };
+                let re = match ex2 
+                {
+                    Some(re) => format!(" = {}", ex2.as_ref().unwrap()),
+                    None => "".to_string(),
+                };
+
+                format!("let {}{}{};", ex1, t, re)
+            },
+            Statement::Expr(e) => e.to_string(),
+            Statement::Assign(expr1, expr2) => format!("{expr1} = {expr2};"),
+            Statement::While(expr, block) => format!("while {expr} {{{block}}};"),
+            Statement::Fn(decl) => {
+                todo!()
+            },
+        };
+
+        write!(f, "{}\n", s)
     }
 }
 
