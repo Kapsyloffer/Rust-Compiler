@@ -44,7 +44,7 @@ impl Op {
             Op::Eq => todo!(),
             Op::Lt => todo!(),
             Op::Gt => todo!(),
-            //Op::Not =>
+            //Op::Not => todo!(),
         }
     }
 }
@@ -76,7 +76,7 @@ impl Eval<Ty> for Expr
             },
             Expr::Call(id, args) => 
             {
-                todo!()     
+                todo!()
             },
             Expr::Ident(id) => match env.v.get(&id) 
             {
@@ -93,6 +93,7 @@ impl Eval<Ty> for Expr
             Expr::Lit(Literal::String(_)) => Ok((Ty::Lit(Type::String), None)),
             Expr::Par(e) => todo!(),
             Expr::UnOp(_, _) => todo!(),
+            //Expr::Not(e) => todo!(),
         }
     }
 }

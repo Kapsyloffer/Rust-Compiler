@@ -117,8 +117,34 @@ impl Parse for Op
 }
 
 impl Parse for UnOp {
-    fn parse(input: ParseStream) -> Result<Self> {
-        todo!("not implemented {:?}", input)
+    fn parse(input: ParseStream) -> Result<Self> 
+    {
+        if input.peek(Token![&]) 
+        {
+            let _: Token![&] = input.parse()?;
+            Ok(UnOp::Ref)
+        }
+        else if input.peek(Token![*]) 
+        {
+            let _: Token![*] = input.parse()?;
+            Ok(UnOp::DeRef)
+        }
+        else if input.peek(syn::token::Mut) 
+        {
+            let _: syn::token::Mut = input.parse()?;
+            Ok(UnOp::Mut)
+        }
+        
+        else if input.peek(Token![!]) 
+        {
+            let _: Token![!] = input.parse()?;
+            Ok(UnOp::Bang)
+        } 
+        else 
+        {
+            // to explicitly create an error at the current position
+            input.step(|cursor| Err(cursor.error("expected operator")))
+        }
     }
 }
 
@@ -163,8 +189,26 @@ impl Parse for Expr
         else if input.peek(syn::Ident) 
         {
             // we have a left Ident, e.g, "my_best_ident_ever"
+             // we have a left Ident, e.g, "my_best_ident_ever"
+            // this could also be a function call, e.g "myFn(args)"
             let ident: syn::Ident = input.parse()?;
-            Expr::Ident(ident.to_string())
+            if input.peek(syn::token::Paren){
+                let content;
+                let _ = syn::parenthesized!(content in input);
+                let mut args: Vec<Expr> = vec![];
+                while !content.is_empty(){
+                    let param: Expr = content.parse()?;
+                    args.push(param);
+                    if content.peek(syn::token::Comma){
+                        let _comma: syn::token::Comma = content.parse()?;
+                    }
+                }
+                Expr::Call(ident.to_string(), Arguments{0: args})
+            }
+            else
+            {
+                Expr::Ident(ident.to_string())
+            }
         } 
         else if input.peek(syn::token::If) 
         {
@@ -429,8 +473,10 @@ fn test_expr_call_fail() {
 
 use quote::quote;
 
-impl Parse for Type {
-    fn parse(input: ParseStream) -> Result<Type> {
+impl Parse for Type 
+{
+    fn parse(input: ParseStream) -> Result<Type> 
+    {
         // The syn::Type is very complex and overkill
         // Types in Rust involve generics, paths
         // etc., etc., etc. ...
@@ -438,15 +484,19 @@ impl Parse for Type {
         // To make things simple, we just turn the syn::Type
         // to a token stream (`quote`) and turn that into a String
         // and turn that into an &str (`as_str`)
-        Ok(match input.parse::<Token![&]>() {
-            Ok(_) => {
+        Ok(match input.parse::<Token![&]>() 
+        {
+            Ok(_) => 
+            {
                 let t: Type = input.parse()?;
                 Type::Ref(Box::new(t))
             }
-            Err(_) => {
+            Err(_) => 
+            {
                 let t: syn::Type = input.parse()?;
                 let ts = quote! {#t}.to_string();
-                match ts.as_str() {
+                match ts.as_str() 
+                {
                     "i32" => Type::I32,
                     "bool" => Type::Bool,
                     "()" => Type::Unit,

@@ -124,12 +124,13 @@ impl fmt::Display for Type
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
     {
-        let s = match *self{
+        let s = match self
+        {
             Type::I32 => "i32",
             Type::Bool => "bool",
             Type::Unit => "()",
             Type::String => "String",
-            Type::Ref(_) => "ref",
+            Type::Ref(e) => "",
         };
         write!(f, "{}", s)
     }
@@ -148,7 +149,13 @@ impl fmt::Display for UnOp
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
     {
-        todo!()
+        match self
+        {
+            UnOp::Bang => todo!(),
+            UnOp::DeRef => todo!(),
+            UnOp::Mut => todo!(),
+            UnOp::Ref => todo!(),
+        }
     }
 }
 
@@ -158,13 +165,29 @@ impl fmt::Display for Expr
     {
         let s = match self
         {
-            Expr::Call(_,_) => todo!(),
+            Expr::Call(s,args) => 
+            {
+                let mut params = String::new();
+                let mut iter_param = args.0.iter().peekable();
+                for param in iter_param.clone()
+                {
+                    params.push_str(&param.to_string());
+                    if iter_param.peek().is_some() 
+                    {
+                        params.push_str(", ");
+                    }
+                }
+                format!("{}({})", s, params)
+            },
             Expr::Ident(a) => a.to_owned(),
             Expr::Lit(l) => format!("{}", l),
             Expr::BinOp(op, l, r) => format!("{} {} {}", l, op, r),
             Expr::Par(e) => format!("({})", e),
-            Expr::IfThenElse(c, f, e) => format!("if {} {{\n{}}}\n else\n {{ {:?} }}", c, &f, e),
-            Expr::Block(_) => unimplemented!(),
+            Expr::IfThenElse(c, f, e) => 
+            {
+                format!("if {} {{\n{}}}\n else\n {{ {:?} }}", c, &f, e)
+            },
+            Expr::Block(b) => unimplemented!(),
             Expr::UnOp(_, _) => unimplemented!(),
             //Expr::Not(c) => format!("!{}", c),
         };
@@ -190,7 +213,12 @@ impl fmt::Display for Mutable
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
     {
-        todo!()
+        let s = match self.0
+        {
+            true => String::from("mut "),
+            false => String::from(""),
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -207,7 +235,12 @@ impl fmt::Display for Parameters
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
     {
-        todo!()
+        let mut ps: String = String::new();
+        for p in self.clone().0
+        {
+            ps.push_str(&format!("{}", p));
+        };
+        write!(f, "{}", ps)
     }
 }
 
@@ -215,7 +248,12 @@ impl fmt::Display for Arguments
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
     {
-        todo!()
+        let mut s : String = String::new();
+        for args in self.clone().0
+        {
+            s.push_str(&format!("{}", args));
+        }
+        write!(f, "{}", s)
     }
 }
 
@@ -223,7 +261,22 @@ impl fmt::Display for FnDeclaration
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
     {
-        todo!()
+        //fn + {name} (args) "{" "}"
+        let mut s: String = String::from("fn ");
+        s.push_str(&format!("{}(", self.id));
+        for(i, parameter) in self.parameters.0.iter().enumerate()
+        {
+            if i != 0
+            {
+                s.push_str(", ");
+            }
+            s.push_str(&format!("{}: {}{}", parameter.id, parameter.mutable, parameter.ty));
+        }
+        s.push_str(") ");
+        // 3 tests fail when I uncomment this and I don't know why
+       // s.push_str(&format!("{}", self.ty.clone().unwrap()));
+        s.push_str(&format!("{}", self.body));
+        write!(f, "{}", s)
     }
 }
 
@@ -231,7 +284,12 @@ impl fmt::Display for Prog
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
     {
-        todo!()
+        let mut s : String = String::new();
+        for p in self.0.clone()
+        {
+            s.push_str(&format!("{}\n", p));
+        }
+        write!(f, "{}", s)
     }
 }
 
@@ -256,12 +314,21 @@ impl fmt::Display for Statement
 
                 format!("let {}{}{};", ex1, t, re)
             },
-            Statement::Expr(e) => e.to_string(),
-            Statement::Assign(expr1, expr2) => format!("{expr1} = {expr2};"),
-            Statement::While(expr, block) => format!("while {expr} {{{block}}};"),
+            Statement::Expr(e) => 
+            {
+                e.to_string()
+            },
+            Statement::Assign(expr1, expr2) => 
+            {
+                format!("{} = {};", expr1, expr2)
+            },
+            Statement::While(expr, block) => 
+            {
+                format!("while {} {{{}}};", expr, block)
+            },
             Statement::Fn(decl) => 
             {
-                todo!()
+                format!("{}", decl)
             },
         };
 
