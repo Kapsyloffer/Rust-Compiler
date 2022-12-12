@@ -2,9 +2,11 @@ use crate::ast::{Block, Expr, FnDeclaration, Literal, Op, Prog, Type};
 use crate::common::Eval;
 use crate::env::{Env, Ref};
 use crate::error::Error;
-
+#[allow(unused_imports)]
 use std::convert::{From, Into};
 use std::fmt::Debug;
+
+type TypeErr = String;
 
 // type check
 #[derive(Debug, Clone, PartialEq)]
@@ -29,25 +31,69 @@ impl From<&Literal> for Ty {
 // Helper for Op
 impl Op {
     // Evaluate operator to literal
-    fn unify(&self, left: Ty, right: Ty) -> Result<(Ty, Option<Ref>), Error> {
-        todo!()
+    pub fn unify(&self, l: Ty, r: Ty) -> Result<(Ty, Option<Ref>), Error> 
+    {
+        match self 
+        {
+            Op::Add => todo!(),
+            Op::Sub => todo!(),
+            Op::Mul => todo!(),
+            Op::Div => todo!(),
+            Op::And => todo!(),
+            Op::Or => todo!(),
+            Op::Eq => todo!(),
+            Op::Lt => todo!(),
+            Op::Gt => todo!(),
+            //Op::Not =>
+        }
     }
 }
+
 
 // General unification
-fn unify(expected: Ty, got: Ty, result: Ty) -> Result<(Ty, Option<Ref>), Error> {
-    match expected == got {
-        true => Ok((result.into(), None)),
-        _ => Err(format!(
-            "Cannot unify types, expected {:?} got {:?}",
-            expected, got
-        )),
+fn unify(got: Type, expected: Type) -> Result<Type, TypeErr> {
+    match got == expected 
+    {
+        true => Ok(expected),
+        false => Err(format!("expected type {:?}, got type {:?}", expected, got)),
     }
 }
 
-impl Eval<Ty> for Expr {
-    fn eval(&self, env: &mut Env<Ty>) -> Result<(Ty, Option<Ref>), Error> {
-        todo!("not implemented {:?}", self)
+
+impl Eval<Ty> for Expr 
+{
+    fn eval(&self, env: &mut Env<Ty>) -> Result<(Ty, Option<Ref>), Error> 
+    {
+        match self
+        {
+            Expr::BinOp(op, l, r) => 
+            {
+                todo!()
+            },
+            Expr::Block(b) => 
+            {
+                todo!()
+            },
+            Expr::Call(id, args) => 
+            {
+                todo!()     
+            },
+            Expr::Ident(id) => match env.v.get(&id) 
+            {
+                Some(t) => Ok((t, None)),
+                None => Err("variable not found".to_string()),
+            },
+            Expr::IfThenElse(cond, t, e) => 
+            {
+                todo!()
+            },
+            Expr::Lit(Literal::Int(_)) => Ok((Ty::Lit(Type::I32), None)),
+            Expr::Lit(Literal::Bool(_)) => Ok((Ty::Lit(Type::Bool), None)),
+            Expr::Lit(Literal::Unit) => Ok((Ty::Lit(Type::Unit), None)),
+            Expr::Lit(Literal::String(_)) => Ok((Ty::Lit(Type::String), None)),
+            Expr::Par(e) => todo!(),
+            Expr::UnOp(_, _) => todo!(),
+        }
     }
 }
 

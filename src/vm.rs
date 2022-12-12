@@ -67,17 +67,35 @@ impl Op
 }
 
 
-impl Expr {
-    pub fn get_id(&self) -> Result<String, VmErr> {
-        match self {
+impl Expr 
+{
+    pub fn get_id(&self) -> Result<String, VmErr> 
+    {
+        match self 
+        {
             Expr::Ident(s) => Ok(s.to_owned()),
             _ => Err(VmErr::Err(format!("cannot get id from {:?}", self))),
         }
     }
 
-    pub fn eval(&self, env: &mut VarEnv) -> Result<Literal, VmErr> {
-        match self {
-            Expr::Ident(id) => {
+    pub fn eval(&self, env: &mut VarEnv) -> Result<Literal, VmErr> 
+    {
+        match self 
+        {
+            Expr::BinOp(op, left, right) => 
+            {
+                op.eval(left.eval(env)?, right.eval(env)?)
+            },
+            Expr::Block(b) => 
+            { 
+                todo!()
+            },
+            Expr::Call(s, args) => 
+            { 
+                todo!()
+            },
+            Expr::Ident(id) => 
+            {
                 let l : Option<Literal> = None;
                 for cur_env in env.iter_mut() 
                 {
@@ -96,29 +114,31 @@ impl Expr {
                     Err(VmErr::Err("Variable not found".to_string()))
                 }
             }
-            Expr::Lit(literal) => Ok(literal.clone()),
-            Expr::BinOp(op, left, right) => op.eval(left.eval(env)?, right.eval(env)?),
-            Expr::Par(e) => e.eval(env),
-            Expr::IfThenElse(c, t, e) => match c.eval(env)?.get_bool()? {
-                true => (*t).eval(env),
-                false => match e {
-                    Some(e) => e.eval(env),
-                    None => Ok(Literal::Unit),
-                },
+            Expr::IfThenElse(c, t, e) => 
+            {
+                match c.eval(env)?.get_bool()? 
+                {
+                    true => (*t).eval(env),
+                    false => match e 
+                    {
+                        Some(e) => e.eval(env),
+                        None => Ok(Literal::Unit),
+                    },
+                }
             },
-            //Expr::While(_case, _block) => unimplemented!(),
-            //Expr::Not(e) => Ok(Literal::Bool(!e.eval(env)?.get_bool()?)),
-            Expr::Call(_id, _params) => 
-            { 
-                todo!()
+            Expr::Lit(literal) => 
+            {
+                Ok(literal.clone())
             },
-
-            Expr::Block(_) => 
-            { 
-                todo!()
+            /*Expr::Not(e) => 
+            {
+                Ok(Literal::Bool(!e.eval(env)?.get_bool()?))
+            },*/
+            Expr::Par(e) => 
+            {
+                e.eval(env)
             },
-
-            Expr::UnOp(_, _) => 
+            Expr::UnOp(u, b) => 
             { 
                 todo!()
             },

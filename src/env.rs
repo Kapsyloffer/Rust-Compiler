@@ -194,14 +194,14 @@ mod tests {
 
         println!("de_ref_a {:?}", env.de_ref(ref_a));
 
-        // env.alloc("a", ref_a);
-        // println!("env {:?}", env);
+        /* env.alloc("a", ref_a);
+        println!("env {:?}", env);
 
-        // let ref_a = env.get_ref("a").unwrap();
-        // println!("ref_a {:?}", ref_a);
+        let ref_a = env.get_ref("a").unwrap();
+        println!("ref_a {:?}", ref_a);
 
-        // let v = env.get("a");
-        // println!("v {:?}", v);
+        let v = env.get("a");
+        println!("v {:?}", v);*/
 
         env.pop_scope();
 
