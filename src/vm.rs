@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Val {
+pub enum Val { //Value
     Lit(Literal),
     Ref(Ref),
     UnInit,
@@ -83,7 +83,8 @@ impl Expr {
                 {
                     if cur_env.contains_key(id)
                     {
-                        l = cur_env.get(id).unwrap().0;
+                        //l = cur_env.get(id).unwrap().0;
+                        todo!();
                     }
                 }
                 if l.is_some()

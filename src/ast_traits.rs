@@ -31,6 +31,43 @@ impl Expr
         Expr::BinOp(o, Box::new(left), Box::new(right))
     }
 }
+
+impl From<Literal> for Expr 
+{
+    fn from(lit: Literal) -> Self 
+    {
+        Expr::Lit(lit)
+    }
+}
+
+impl From<i32> for Expr 
+{
+    fn from(i: i32) -> Self 
+    {
+        Expr::Lit(Literal::Int(i))
+    }
+}
+
+impl From<i32> for Literal 
+{
+    fn from(i: i32) -> Self 
+    {
+        Literal::Int(i)
+    }
+}
+
+impl From<Expr> for Literal 
+{
+    fn from(e: Expr) -> Self 
+    {
+        match e 
+        {
+            Expr::Lit(l) => l,
+            _ => unreachable!(),
+        }
+    }
+}
+
 // Display implementation
 impl fmt::Display for Op 
 {
@@ -57,9 +94,11 @@ impl fmt::Display for Op
 // You may want to re-factor tests into module.
 // See e.g., vm.rs
 
-impl fmt::Display for Literal {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match *self 
+impl fmt::Display for Literal 
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
+        let s = match self 
         {
             Literal::Bool(b) => b.to_string(),
             Literal::Int(i) => i.to_string(),
@@ -71,7 +110,8 @@ impl fmt::Display for Literal {
 }
 
 #[test]
-fn display_literal() {
+fn display_literal() 
+{
     println!("{}", Literal::Int(3));
     println!("{}", Literal::Bool(false));
     println!("{}", Literal::Unit);
@@ -96,15 +136,18 @@ impl fmt::Display for Type
 }
 
 #[test]
-fn display_type() {
+fn display_type() 
+{
     assert_eq!(format!("{}", Type::I32), "i32");
     assert_eq!(format!("{}", Type::Bool), "bool");
     assert_eq!(format!("{}", Type::Unit), "()");
     assert_eq!(format!("{}", Type::String), "String");
 }
 
-impl fmt::Display for UnOp {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for UnOp 
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
         todo!()
     }
 }
@@ -143,8 +186,10 @@ impl fmt::Display for Block
     }
 }
 
-impl fmt::Display for Mutable {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for Mutable 
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
         todo!()
     }
 }
@@ -158,34 +203,44 @@ impl fmt::Display for Parameter
     }
 }
 
-impl fmt::Display for Parameters {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for Parameters 
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
         todo!()
     }
 }
 
-impl fmt::Display for Arguments {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for Arguments 
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
         todo!()
     }
 }
 
-impl fmt::Display for FnDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for FnDeclaration 
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
         todo!()
     }
 }
 
-impl fmt::Display for Prog {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl fmt::Display for Prog 
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
         todo!()
     }
 }
 
 impl fmt::Display for Statement 
 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
+    {
+        let s = match self
+        {
             Statement::Let(_mut, ex1, _type, ex2) => 
             {
                 let t = match _type 
@@ -204,7 +259,8 @@ impl fmt::Display for Statement
             Statement::Expr(e) => e.to_string(),
             Statement::Assign(expr1, expr2) => format!("{expr1} = {expr2};"),
             Statement::While(expr, block) => format!("while {expr} {{{block}}};"),
-            Statement::Fn(decl) => {
+            Statement::Fn(decl) => 
+            {
                 todo!()
             },
         };

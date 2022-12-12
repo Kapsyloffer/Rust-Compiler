@@ -50,6 +50,7 @@ impl Op {
             Op::Eq => 2,
             Op::Lt => 2,
             Op::Gt => 2,
+            //Op::Not => 3,
         }
     }
 }
@@ -142,6 +143,7 @@ pub fn climb(e: Expr) -> Expr {
     // now call the climber
     climb_rec(lhs, 0, &mut scanner)
 }
+
 
 #[test]
 fn climb_test1() {
