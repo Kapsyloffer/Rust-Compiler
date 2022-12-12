@@ -1,3 +1,4 @@
+#[allow(unused_mut)]
 fn main() {
     let a = &1;
     let mut a = &mut { *a + 5 };

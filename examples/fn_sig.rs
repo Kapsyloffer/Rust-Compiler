@@ -1,3 +1,4 @@
+#[allow(unconditional_recursion)]
 fn a(i: i32, bo: bool) -> i32 {
     fn b(j: i32) -> i32 {
         a(j, c())

@@ -1,6 +1,6 @@
 fn main() {
     let mut a = 6;
-    let b = {
+    let _b = {
         a = a + 1;
         a
     };

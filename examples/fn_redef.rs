@@ -1,4 +1,4 @@
 fn main() {
-    fn a() {}
+    fn _a() {}
     // fn a() {} // <- you cannot re-define functions
 }

@@ -128,7 +128,7 @@ impl fmt::Display for Type
             Type::I32 => "i32",
             Type::Bool => "bool",
             Type::Unit => "()",
-            Type::String => "str",
+            Type::String => "String",
             Type::Ref(_) => "ref",
         };
         write!(f, "{}", s)

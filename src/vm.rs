@@ -78,13 +78,13 @@ impl Expr {
     pub fn eval(&self, env: &mut VarEnv) -> Result<Literal, VmErr> {
         match self {
             Expr::Ident(id) => {
-                let mut l : Option<Literal> = None;
+                let l : Option<Literal> = None;
                 for cur_env in env.iter_mut() 
                 {
                     if cur_env.contains_key(id)
                     {
                         //l = cur_env.get(id).unwrap().0;
-                        todo!();
+                        todo!()
                     }
                 }
                 if l.is_some()
@@ -149,7 +149,7 @@ impl Block {
                         cur_env.insert(id, (None, Some(dec.clone())));
                     }
                 },
-
+                #[allow(unused_assignments)]
                 Statement::Let(_mut, id, _, e) => {
                     // the right hand side, in the "old" env
                     let l :Option<Literal>;

@@ -1,3 +1,5 @@
+#[allow(dead_code)]
+#[allow(unused_assignments)]
 fn main() {
     fn a() -> i32 {
         let a: i32 = 1 + 2; // a == 3
