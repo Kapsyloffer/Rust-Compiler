@@ -76,7 +76,36 @@ impl Eval<Ty> for Expr
             },
             Expr::Call(id, args) => 
             {
-                todo!()
+                let f = env.f.0.get(id).unwrap().clone();
+                let mut i = 0;
+                for param in f.0.parameters.0.clone() 
+                {
+                    let a = args.0.get(i).clone();
+                    let arg;
+                    if a != None
+                    {
+                        arg = a.unwrap();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                    let arg = arg.eval(env)?.0;
+                    if Ty::Lit(param.ty.clone()) != arg.clone() {
+                        //Throw error since arg and param types don't match
+                        return unify(Ty::Lit(param.ty), arg.clone(), arg)
+                    }
+                    i = i+1;
+                }
+
+                if f.0.ty.is_some()
+                {
+                    Ok((Ty::Lit(f.0.ty.unwrap()), None))
+                }
+                else
+                {
+                    Ok((Ty::Lit(Type::Unit), None))
+                }
             },
             Expr::Ident(id) => match env.v.get(&id) 
             {
@@ -100,13 +129,34 @@ impl Eval<Ty> for Expr
                     Ok((Ty::Lit(Type::Unit), None))
                 }
             },
-            Expr::Lit(Literal::Int(_)) => Ok((Ty::Lit(Type::I32), None)),
-            Expr::Lit(Literal::Bool(_)) => Ok((Ty::Lit(Type::Bool), None)),
-            Expr::Lit(Literal::Unit) => Ok((Ty::Lit(Type::Unit), None)),
-            Expr::Lit(Literal::String(_)) => Ok((Ty::Lit(Type::String), None)),
-            Expr::Par(e) => e.eval(env),
-            Expr::UnOp(u, e) => todo!(),
-            //Expr::Not(e) => todo!(),
+            Expr::Lit(Literal::Bool(_)) => 
+            {
+                Ok((Ty::Lit(Type::Bool), None))
+            },
+            Expr::Lit(Literal::Int(_)) => 
+            {
+                Ok((Ty::Lit(Type::I32), None))
+            },
+            Expr::Lit(Literal::String(_)) => 
+            {
+                Ok((Ty::Lit(Type::String), None))
+            },
+            Expr::Lit(Literal::Unit) => 
+            {
+                Ok((Ty::Lit(Type::Unit), None))
+            },
+            /*Expr::Not(e) => 
+            {
+                todo!()
+            },*/
+            Expr::Par(e) =>
+            {
+                e.eval(env)
+            },
+            Expr::UnOp(u, e) => 
+            {
+                todo!()
+            },
         }
     }
 }
@@ -179,7 +229,38 @@ impl Eval<Ty> for Statement
             {
                 Statement::Assign(id, e) =>
                 {
-                    todo!()
+                    let id_type = id.eval(env)?.0;
+                    let m = id.eval(env)?.1;
+                    let ty: Option<Ty> = env.v.get(&id.to_string());
+
+                    match env.v.de_ref(m.unwrap()) 
+                    {
+                        Ty::Mut(_) => {},
+                        Ty::Lit(Type::Ref(_)) => return Err("Can't assign to Reference".to_string()),
+                        _ => return Err("Can't assign to none mutable".to_string())
+                    }
+                    let e_type = e.eval(env)?; //Angels crying
+                    match ty.unwrap() 
+                    {
+                        Ty::Lit(Type::Unit) => 
+                        { 
+                            match id 
+                            {
+                                Expr::Ident(key) => {env.v.alloc(&key, e_type.0);},
+                                _ => unreachable!()
+                            }
+                        },
+                        _ => 
+                        {
+                            let res1 = id.eval(env);
+                            let res2 = e.eval(env);
+                            if res1.is_err() || res2.is_err() || unify(res1.clone()?.0, res2?.0, res1.clone()?.0).is_err() 
+                            {
+                                return Err("Error in assignment".to_string())
+                            }
+                        },
+                    }
+                    (Ty::Lit(Type::Unit), None)
                 },
                 Statement::Expr(e) =>
                 {
@@ -195,9 +276,73 @@ impl Eval<Ty> for Statement
                 {
                     decl.eval(env)?
                 },
-                Statement::Let(_, _, _, _) =>
+                Statement::Let(m, id, t, e) =>
                 {
-                    todo!()
+                    let e_val : Ty;
+                    if e.is_some()
+                    {
+                        e_val = e.as_ref().unwrap().eval(env)?.0;
+                    }
+                    else
+                    {
+                        e_val = Ty::Lit(Type::Unit);
+                    }
+
+                    match (e, t)
+                    {
+                        (Some(e), Some(t)) =>
+                        {
+                            if unify(e_val.clone(),Ty::Lit((*t).clone()), Ty::Lit((*t).clone())).is_err() 
+                            {
+                                return Err("Missmatching types in let-statement".to_string())
+                            }
+
+                            if m.0 
+                            {
+                                env.v.alloc(&id, Ty::Mut(Box::new(e_val.clone())));
+                            }
+                            else
+                            {
+                                env.v.alloc(&id, e_val);
+                            }
+                        }
+                        (Some(e), None) =>
+                        {
+                            if m.0 
+                            {
+                                env.v.alloc(&id, Ty::Mut(Box::new(e_val.clone())));
+                            }
+                            else
+                            {
+                                env.v.alloc(&id, e_val.clone());
+                            }
+    
+                        }
+                        (None, Some(t)) =>
+                        {
+                            if m.0 
+                            {
+                                env.v.alloc(&id, Ty::Mut(Box::new(Ty::Lit((*t).clone()))));
+                            }
+                            else
+                            {
+                                env.v.alloc(&id, Ty::Lit((*t).clone()));
+                            }
+    
+                        }
+                        (None, None) =>
+                        {
+                            if m.0 
+                            {
+                                env.v.alloc(&id, Ty::Mut(Box::new(Ty::Lit(Type::Unit))));
+                            }
+                            else
+                            {
+                                env.v.alloc(&id, Ty::Lit(Type::Unit));
+                            }
+                        }
+                    }
+                    (Ty::Lit(Type::Unit), None)
                 },
                 Statement::While(e, b) =>
                 {
