@@ -1,234 +1,117 @@
-use crate::ast::*;
-use crate::ast_traits::*;
+use crate::ast::{Block, Expr, FnDeclaration, Literal, Op, Prog, Statement};
 use crate::common::Eval;
 use crate::env::{Env, Ref};
 use crate::error::Error;
-use std::collections::HashMap;
-use std::collections::VecDeque;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Val { //Value
+pub enum Val 
+{
     Lit(Literal),
     Ref(Ref),
     UnInit,
     Mut(Box<Val>),
 }
 
-type VarEnv = VecDeque<HashMap<String, (Option<Literal>, Option<FnDeclaration>)>>;
-
 // Helpers for Val
 // Alternatively implement the TryFrom trait
 impl Val {
-    pub fn get_bool(&self) -> Result<bool, Error> {
-        match self {
+    pub fn get_bool(&self) -> Result<bool, Error> 
+    {
+        match self 
+        {
             Val::Lit(Literal::Bool(b)) => Ok(*b),
             _ => Err(format!("cannot get Bool from {:?}", self)),
         }
     }
 
-    pub fn get_int(&self) -> Result<i32, Error> {
-        match self {
+    pub fn get_int(&self) -> Result<i32, Error> 
+    {
+        match self 
+        {
             Val::Lit(Literal::Int(i)) => Ok(*i),
             _ => Err(format!("cannot get integer from {:?}", self)),
         }
     }
+
+    pub fn get_string(&self) -> Result<Literal, Error> 
+    {
+        match self 
+        {
+            Val::Lit(s) => Ok(s.clone()),
+            _ => Err(format!("cannot get string from {:?}", self)),
+        }
+    }
+
 }
 
 // Helper for Op
 impl Op 
 {
     // Evaluate operator to literal
-    pub fn eval(&self, left: Literal, right: Literal) -> Result<Literal, VmErr> 
+    pub fn eval(&self, left: Val, right: Val) -> Result<Val, Error> 
     {
         use Literal::{Bool, Int};
         match self 
         {
-            Op::Add => Ok(Int(left.get_int()? + right.get_int()?)),
-            Op::Sub => Ok(Int(left.get_int()? - right.get_int()?)),
-            Op::Mul => Ok(Int(left.get_int()? * right.get_int()?)),
-            Op::Div => Ok(Int(left.get_int()? / right.get_int()?)),
-            Op::And => Ok(Bool(left.get_bool()? && right.get_bool()?)),
-            Op::Or => Ok(Bool(left.get_bool()? || right.get_bool()?)),
-            Op::Eq => Ok(Bool(left == right)), // overloading
-            Op::Lt => Ok(Bool(left.get_int()? < right.get_int()?)),
-            Op::Gt => Ok(Bool(left.get_int()? > right.get_int()?)),
+            Op::Add => Ok(Val::Lit(Int(left.get_int()? + right.get_int()?))),
+            Op::Sub => Ok(Val::Lit(Int(left.get_int()? - right.get_int()?))),
+            Op::Mul => Ok(Val::Lit(Int(left.get_int()? * right.get_int()?))),
+            Op::Div => Ok(Val::Lit(Int(left.get_int()? / right.get_int()?))),
+            Op::And => Ok(Val::Lit(Bool(left.get_bool()? && right.get_bool()?))),
+            Op::Or => Ok(Val::Lit(Bool(left.get_bool()? || right.get_bool()?))),
+            Op::Eq => Ok(Val::Lit(Bool(left == right))), // overloading
+            Op::Lt => Ok(Val::Lit(Bool(left.get_int()? < right.get_int()?))),
+            Op::Gt => Ok(Val::Lit(Bool(left.get_int()? > right.get_int()?))),
         }
     }
-   /* pub fn notEval(&self, arg:Literal) -> Result<Literal, VmErr>
-    {
-        match self
-        {
-            //Negates the bool of argument
-            //Op::Not => Literal::Bool(!arg.get_bool()),
-            Op::Not => Ok(Literal::Bool(!arg.get_bool()?)),
-            _=> unimplemented!(),
-        }
-    }*/ 
 }
 
-
-impl Expr 
+impl Eval<Val> for Expr 
 {
-    pub fn get_id(&self) -> Result<String, VmErr> 
+    fn eval(&self, env: &mut Env<Val>) -> Result<(Val, Option<Ref>), Error> 
     {
         match self 
         {
-            Expr::Ident(s) => Ok(s.to_owned()),
-            _ => Err(VmErr::Err(format!("cannot get id from {:?}", self))),
-        }
-    }
-
-    pub fn eval(&self, env: &mut VarEnv) -> Result<Literal, VmErr> 
-    {
-        match self 
-        {
-            Expr::BinOp(op, left, right) => 
+            Expr::Ident(id) => match env.v.get(&id)
             {
-                op.eval(left.eval(env)?, right.eval(env)?)
-            },
-            Expr::Block(b) => 
-            { 
-                todo!()
-            },
-            Expr::Call(s, args) => 
-            { 
-                todo!()
-            },
-            Expr::Ident(id) => 
-            {
-                let l : Option<Literal> = None;
-                for cur_env in env.iter_mut() 
-                {
-                    if cur_env.contains_key(id)
-                    {
-                        //l = cur_env.get(id).unwrap().0;
-                        todo!()
-                    }
-                }
-                if l.is_some()
-                {
-                    Ok(l.unwrap())
-                }
-                else
-                {
-                    Err(VmErr::Err("Variable not found".to_string()))
-                }
-            }
-            Expr::IfThenElse(c, t, e) => 
-            {
-                match c.eval(env)?.get_bool()? 
-                {
-                    true => (*t).eval(env),
-                    false => match e 
-                    {
-                        Some(e) => e.eval(env),
-                        None => Ok(Literal::Unit),
-                    },
-                }
+                Some(t) => Ok((t, env.v.get_ref(id))),
+                None => Err("Variable not found".to_string()),
             },
             Expr::Lit(literal) => 
             {
-                Ok(literal.clone())
+                Ok((Val::Lit(literal.clone()), None))
             },
-            /*Expr::Not(e) => 
+            Expr::BinOp(op, left, right) => 
             {
-                Ok(Literal::Bool(!e.eval(env)?.get_bool()?))
-            },*/
+                Ok((op.eval(left.eval(env)?.0, right.eval(env)?.0)?, None))
+            }
             Expr::Par(e) => 
             {
                 e.eval(env)
+            }
+            Expr::IfThenElse(c, t, e) => 
+            match c.eval(env)?.0.get_bool()? 
+            {
+                true => (*t).eval(env),
+                false => match e 
+                {
+                    Some(e) => e.eval(env),
+                    None => Ok((Val::Lit(Literal::Unit), None)),
+                },
             },
-            Expr::UnOp(u, b) => 
-            { 
+            Expr::Block(bl) => 
+            {
+                todo!()
+            },
+            Expr::Call(id, params) => 
+            {
+                todo!()
+            },
+            Expr::UnOp(uop, e) => 
+            {
                 todo!()
             },
         }
-    }
-}
-
-impl Block {
-    pub fn eval(&self, env: &mut VarEnv) -> Result<Literal, VmErr> {
-        // let mut env = env.clone();
-        let abc : HashMap<String, (Option<Literal>, Option<FnDeclaration>)> = HashMap::new();
-        env.push_front(abc);
-        let mut return_val = Literal::Unit;
-        for be in &self.statements {
-            println!("be {:?}", be);
-            match be {
-                Statement::Fn(dec) => 
-                {
-                    let id = dec.id.to_string();
-                    let _eval = dec.body.eval(env)?;
-                    let cur_env = env.get_mut(0).unwrap();
-                    if cur_env.contains_key(&id)
-                    {
-                        return Err(VmErr::Err("Duplicate function".to_string()));
-                    }
-                    else 
-                    {
-                        cur_env.insert(id, (None, Some(dec.clone())));
-                    }
-                },
-                #[allow(unused_assignments)]
-                Statement::Let(_mut, id, _, e) => {
-                    // the right hand side, in the "old" env
-                    let l :Option<Literal>;
-                    match e
-                    {
-                        Some(e) => l = Some(e.eval(env)?),
-                        None => l = None
-                    }
-                    // the left hand side, for now just accept an ident
-                    let cur_env = env.get_mut(0).unwrap(); //Errors here, idk why
-                    //cur_env.insert(id.get_id()?, (Some(l.unwrap()), None));
-                },
-
-                Statement::Assign(id, e) => {
-                    let l = e.eval(env)?;
-                   // the right hand side, in the "old" env
-                    for (i, cur_env) in env.clone().iter_mut().enumerate() 
-                    {
-                        if cur_env.contains_key(&id.get_id()?) 
-                        {
-                            env[i].insert(id.get_id()?, (Some(l), None));
-                            break;
-                        }
-                    } //Thank you, Huber.
-                },
-
-                Statement::Expr(e) => 
-                {
-                    return_val = e.eval(env)?;
-                },
-
-                Statement::While(c, block) => {
-                    while c.eval(env)?.get_bool()? {
-                        block.eval(env)?;
-                    }
-                },
-            }
-        }
-        match self.semi {
-            true => Ok(Literal::Unit),
-            false => Ok(return_val),
-        }
-    }
-}
-
-impl Eval<Val> for Expr {
-    fn eval(&self, env: &mut Env<Val>) -> Result<(Val, Option<Ref>), Error> 
-    {
-        match self
-        {
-            Expr::BinOp(_, _, _) => { todo!()},
-            Expr::Block(_) => { todo!()},
-            Expr::Call(_, _) => { todo!()},
-            Expr::Ident(_) => { todo!()},
-            Expr::IfThenElse(_, _, _) => { todo!()},
-            Expr::Lit(_) => { todo!()},
-            Expr::Par(_) => { todo!()},
-            Expr::UnOp(_, _) => { todo!()},
-         }
     }
 }
 
@@ -236,7 +119,74 @@ impl Eval<Val> for Block
 {
     fn eval(&self, env: &mut Env<Val>) -> Result<(Val, Option<Ref>), Error> 
     {
-        todo!("not implemented {:?}", self)
+        env.v.push_scope();
+        let mut return_val = Val::Lit(Literal::Unit);
+        for be in &self.statements 
+        {
+            println!("be {:?}", be);
+            match be 
+            {
+                Statement::Let(m, id, _, e) => 
+                {
+                    // the right hand side, in the "old" env
+                    let l: Val;
+                    match e
+                    {
+                        Some(e) => l = e.eval(env)?.0,
+                        None => l = Val::UnInit
+                    }
+                    // the left hand side, for now just accept an ident
+                    env.v.alloc(id, l);
+                },
+                Statement::Assign(id, e) => 
+                {
+                    // the right hand side, in the "old" env
+                    let id_val = id.eval(env)?;
+                    let ex = e.eval(env)?;
+                    /* for currentenv in env.iter_mut() {
+                        if currentenv.0.contains_key(&id.get_id()?){
+                            currentenv.0.insert(id.get_id()?, Some(l));
+                            break;
+                        }
+                    } */
+                    let err = env.v.get(&id.to_string());
+                    if err.is_none()
+                    {
+                        return Err("That variable has not been declared".to_string());
+                    }
+                    if id_val.1.is_some()
+                    {
+                        env.v.set_ref(id_val.1.unwrap(), ex.0);
+                    }
+                    else
+                    {
+                        return Err("Expected ref in assignment".to_string());
+                    }
+                },
+                Statement::Expr(e) => 
+                {
+                    return_val = e.eval(env)?.0;
+                },
+
+                Statement::While(c, block) => 
+                {
+                    while c.eval(env)?.0.get_bool()? 
+                    {
+                        block.eval(env)?;
+                    }
+                },
+                Statement::Fn(fndecl) => 
+                {
+                    fndecl.eval(env)?;
+                },
+            }
+        }
+        env.v.pop_scope();
+        match self.semi 
+        {
+            true => Ok((Val::Lit(Literal::Unit), None)),
+            false => Ok((return_val, None)),
+        }
     }
 }
 
@@ -244,8 +194,7 @@ impl Eval<Val> for FnDeclaration
 {
     fn eval(&self, env: &mut Env<Val>) -> Result<(Val, Option<Ref>), Error> 
     {
-        env.f.add_functions_unique(vec![self.clone()])?; 
-        Ok((Val::Lit(Literal::Unit),None))
+        Ok((Val::Lit(Literal::Unit), None))
     }
 }
 
@@ -253,9 +202,19 @@ impl Eval<Val> for Prog
 {
     fn eval(&self, env: &mut Env<Val>) -> Result<(Val, Option<Ref>), Error> 
     {
-        todo!("not implemented {:?}", self)
+        for func in self.0.clone()
+        {
+            func.eval(env)?;
+        }
+        match env.f.0.get("main") 
+        {
+            Some(_f) => Err("Ok")?,
+            None => Err("Warning, function 'main' not found")?,
+        }
+
     }
 }
+
 
 #[cfg(test)]
 mod tests {

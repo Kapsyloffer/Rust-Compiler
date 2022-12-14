@@ -1,4 +1,4 @@
-use crate::ast::{Block, Expr, FnDeclaration, Literal, Op, Prog, Type};
+use crate::ast::*;
 use crate::common::Eval;
 use crate::env::{Env, Ref};
 use crate::error::Error;
@@ -35,15 +35,15 @@ impl Op {
     {
         match self 
         {
-            Op::Add => todo!(),
-            Op::Sub => todo!(),
-            Op::Mul => todo!(),
-            Op::Div => todo!(),
-            Op::And => todo!(),
-            Op::Or => todo!(),
-            Op::Eq => todo!(),
-            Op::Lt => todo!(),
-            Op::Gt => todo!(),
+            Op::Add => unify(l, r, Ty::Lit(Type::I32)),
+            Op::Sub => unify(l, r, Ty::Lit(Type::I32)),
+            Op::Mul => unify(l, r, Ty::Lit(Type::I32)),
+            Op::Div => unify(l, r, Ty::Lit(Type::I32)),
+            Op::And => unify(l, r, Ty::Lit(Type::Bool)),
+            Op::Or => unify(l, r, Ty::Lit(Type::Bool)),
+            Op::Eq => unify(l, r, Ty::Lit(Type::Bool)),
+            Op::Lt => unify(l, r, Ty::Lit(Type::Bool)),
+            Op::Gt => unify(l, r, Ty::Lit(Type::Bool)),
             //Op::Not => todo!(),
         }
     }
@@ -51,10 +51,10 @@ impl Op {
 
 
 // General unification
-fn unify(got: Type, expected: Type) -> Result<Type, TypeErr> {
+fn unify(got: Ty, expected: Ty, result: Ty) ->Result<(Ty, Option<Ref>), Error> {
     match got == expected 
     {
-        true => Ok(expected),
+        true => Ok((result.into(), None)),
         false => Err(format!("expected type {:?}, got type {:?}", expected, got)),
     }
 }
@@ -72,7 +72,7 @@ impl Eval<Ty> for Expr
             },
             Expr::Block(b) => 
             {
-                todo!()
+                b.eval(env)
             },
             Expr::Call(id, args) => 
             {
@@ -83,38 +83,141 @@ impl Eval<Ty> for Expr
                 Some(t) => Ok((t, None)),
                 None => Err("variable not found".to_string()),
             },
-            Expr::IfThenElse(cond, t, e) => 
+            Expr::IfThenElse(cond, t, _else) => 
             {
-                todo!()
+                let cond_t = cond.eval(env)?;
+                let do_t = t.eval(env)?;
+                unify(cond_t.0, Ty::Lit(Type::Bool), Ty::Lit(Type::Bool))?;
+                
+                if _else.is_none()
+                {
+                    Ok((Ty::Lit(Type::Unit), None))
+                }
+                else 
+                {
+                    let e_type = _else.as_ref().unwrap().eval(env)?; //This, this is the way, this is the way I wanna live
+                    unify(do_t.0.clone(), e_type.0.clone(), do_t.0.clone())?;
+                    Ok((Ty::Lit(Type::Unit), None))
+                }
             },
             Expr::Lit(Literal::Int(_)) => Ok((Ty::Lit(Type::I32), None)),
             Expr::Lit(Literal::Bool(_)) => Ok((Ty::Lit(Type::Bool), None)),
             Expr::Lit(Literal::Unit) => Ok((Ty::Lit(Type::Unit), None)),
             Expr::Lit(Literal::String(_)) => Ok((Ty::Lit(Type::String), None)),
-            Expr::Par(e) => todo!(),
-            Expr::UnOp(_, _) => todo!(),
+            Expr::Par(e) => e.eval(env),
+            Expr::UnOp(u, e) => todo!(),
             //Expr::Not(e) => todo!(),
         }
     }
 }
 
-impl Eval<Ty> for Block {
-    fn eval(&self, env: &mut Env<Ty>) -> Result<(Ty, Option<Ref>), Error> {
-        todo!("not implemented {:?}", self)
+impl Eval<Ty> for Block 
+{
+    fn eval(&self, env: &mut Env<Ty>) -> Result<(Ty, Option<Ref>), Error> 
+    {
+        env.v.push_scope();
+
+        let mut return_ty = (Ty::Lit(Type::Unit), None);
+        for stmt in &self.statements 
+        {
+            // update the return type for each iteration
+            return_ty = stmt.eval(env)?;
+        }
+        env.v.pop_scope();
+        if self.semi
+        {
+            Ok((Ty::Lit(Type::Unit), None))
+        }
+        else
+        {
+            Ok(return_ty)
+        }
     }
 }
 
-impl Eval<Ty> for FnDeclaration {
-    fn eval(&self, env: &mut Env<Ty>) -> Result<(Ty, Option<Ref>), Error> {
-        todo!("not implemented {:?}", self)
+impl Eval<Ty> for FnDeclaration 
+{
+    fn eval(&self, env: &mut Env<Ty>) -> Result<(Ty, Option<Ref>), Error> 
+    {
+        if self.ty.is_none()
+        {
+            Ok((Ty::Lit(Type::Unit), None))
+        } 
+        else 
+        {
+            Ok((Ty::Lit(self.ty.clone().unwrap()), None))
+        }
     }
 }
 
-impl Eval<Ty> for Prog {
-    fn eval(&self, env: &mut Env<Ty>) -> Result<(Ty, Option<Ref>), Error> {
-        todo!("not implemented {:?}", self)
+impl Eval<Ty> for Prog 
+{
+    fn eval(&self, env: &mut Env<Ty>) -> Result<(Ty, Option<Ref>), Error> 
+    {
+        env.f.add_functions_unique(self.0.clone());
+        for _f in self.0.clone()
+        {
+            _f.eval(env)?;
+        }
+        match env.f.0.get("main")
+        {
+            Some(_f) => Err("Ok")?,
+            None => Err("Main not found")?,
+        }
     }
 }
+
+impl Eval<Ty> for Statement
+{
+    #[allow(unused_variables)]
+    #[allow(unreachable_code)]
+    fn eval(&self, env: &mut Env<Ty>) -> Result<(Ty, Option<Ref>), Error> 
+    {
+        Ok
+        (
+            match self
+            {
+                Statement::Assign(id, e) =>
+                {
+                    todo!()
+                },
+                Statement::Expr(e) =>
+                {
+                    let mut _type = e.eval(env)?;
+                    _type.0 = match _type.0
+                    {
+                        Ty::Mut(b) => *b,
+                        _=> _type.0,
+                    };
+                    _type
+                },
+                Statement::Fn(decl) =>
+                {
+                    decl.eval(env)?
+                },
+                Statement::Let(_, _, _, _) =>
+                {
+                    todo!()
+                },
+                Statement::While(e, b) =>
+                {
+                    let cond_t = e.eval(env)?;
+                    let do_t = b.eval(env)?;
+
+                    if unify(cond_t.0, Ty::Lit(Type::Bool), Ty::Lit(Type::Bool)).is_ok()
+                    {
+                        (Ty::Lit(Type::Unit), None)
+                    }
+                    else
+                    {
+                        return Err("Error message".to_string())
+                    }
+                },
+            }
+        )
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

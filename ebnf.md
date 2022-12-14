@@ -19,7 +19,7 @@ bool = "true" | "false" ;
 
 literal = integer | bool;
 
-op = "-" | "+" | "*" | "/" | "&&" | "||" | "<" | ">" | "==" | "!" ;
+op = "-" | "+" | "*" | "/" | "&&" | "||" | "<" | ">" | "==" ;
 
 binop = expr, op, expr;
 
