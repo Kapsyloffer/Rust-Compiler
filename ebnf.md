@@ -43,4 +43,4 @@ statement = (let | assign | while | expr);
 
 ## Blocks
 
-block = "{", statement, "}", ";";
+block = "{", [statement, ";"] "}", ";";

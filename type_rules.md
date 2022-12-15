@@ -39,10 +39,10 @@ $fn : Not (<a_1:Expr>) => Type$
 
 # Stmt
 
-$fn : Let (<a_1:Expr>, <a_2:Expr>, <a_3:Expr>) => Type$
+$fn : Let (<a_1:Expr>, <a_2:Expr>, <a_3:Expr>) => Unit$
 
-$fn : Assign (<a_1:Expr>, <a_2:Expr>) => Type$
+$fn : Assign (<a_1:Expr>, <a_2:Expr>) => Unit$
 
 $fn : Expr (<a_1:Expr>) => Type$
 
-$fn : While (<a_1:Expr>, <a_2:Block>) => Type$
+$fn : While (<a_1:Expr>, <a_2:Block>) => Unit$
