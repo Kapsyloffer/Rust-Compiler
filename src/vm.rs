@@ -259,7 +259,27 @@ impl UnOp
             },
             UnOp::DeRef => 
             {
-                todo!()
+                let v = expr.eval(env)?;
+                let v = v.0;
+                match v
+                {
+                    Val::Mut(m) =>
+                    {
+                        match *m
+                        {
+                            Val::Ref(r) =>
+                            {
+                                Ok((env.v.de_ref(r.clone()), Some(r)))
+                            }
+                            _=> Err("Var is not a reference".to_string())
+                        }
+                    }
+                    Val::Ref(r) =>
+                    {
+                        Ok((env.v.de_ref(r.clone()), Some(r)))
+                    }
+                    _ => Err("Var is not a reference!".to_string())
+                }
             },
             UnOp::Mut => 
             {
@@ -267,7 +287,18 @@ impl UnOp
             },
             UnOp::Ref => 
             {
-                todo!()
+                let v = expr.eval(env)?;
+                let r = if !v.1.is_none()
+                {
+                    v.1.unwrap()
+                }
+                else
+                {
+                    let new_ref = env.v.stack_val(v.0.clone());
+                    env.v.set_ref(new_ref, v.0.clone());
+                    new_ref
+                };
+                Ok( (Val::Ref(r.clone()), Some(r)))
             },
         }
     }
