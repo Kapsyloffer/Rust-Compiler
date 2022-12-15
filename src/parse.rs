@@ -1,9 +1,6 @@
-use crate::ast::{
-    Arguments, Block, Expr, FnDeclaration, Literal, Mutable, Op, Parameter, Parameters, Prog,
-    Statement, Type, UnOp,
-};
-
-use syn::{
+use crate::ast::*;
+use syn::
+{
     parse::{Parse, ParseStream},
     Result, Token,
 };
@@ -24,7 +21,6 @@ impl Parse for Literal
             syn::Lit::Int(l) => Literal::Int(l.base10_parse().unwrap()),
             syn::Lit::Bool(b) => Literal::Bool(b.value),
             syn::Lit::Str(s) => Literal::String(s.value()),
-            // for now only Int and Bool are covered
             _ => unimplemented!(),
         })
     }
@@ -79,23 +75,28 @@ impl Parse for Op
             let _: Token![*] = input.parse()?;
             Ok(Op::Mul)
         } 
-        else if input.peek(Token![/]) {
+        else if input.peek(Token![/]) 
+        {
             let _: Token![/] = input.parse()?;
             Ok(Op::Div)
         } 
-        else if input.peek(Token![&&]) {
+        else if input.peek(Token![&&]) 
+        {
             let _: Token![&&] = input.parse()?;
             Ok(Op::And)
         } 
-        else if input.peek(Token![||]) {
+        else if input.peek(Token![||]) 
+        {
             let _: Token![||] = input.parse()?;
             Ok(Op::Or)
         } 
-        else if input.peek(Token![==]) {
+        else if input.peek(Token![==]) 
+        {
             let _: Token![==] = input.parse()?;
             Ok(Op::Eq)
         } 
-        else if input.peek(Token![>]) {
+        else if input.peek(Token![>]) 
+        {
             let _: Token![>] = input.parse()?;
             Ok(Op::Gt)
         } 

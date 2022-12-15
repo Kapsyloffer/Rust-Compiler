@@ -14,7 +14,8 @@ pub enum Val
 
 // Helpers for Val
 // Alternatively implement the TryFrom trait
-impl Val {
+impl Val 
+{
     pub fn get_bool(&self) -> Result<bool, Error> 
     {
         match self 
@@ -47,7 +48,6 @@ impl Val {
 // Helper for Op
 impl Op 
 {
-    // Evaluate operator to literal
     pub fn eval(&self, left: Val, right: Val) -> Result<Val, Error> 
     {
         use Literal::{Bool, Int};
@@ -72,36 +72,13 @@ impl Eval<Val> for Expr
     {
         match self 
         {
-            Expr::Ident(id) => match env.v.get(&id)
-            {
-                Some(t) => Ok((t, env.v.get_ref(id))),
-                None => Err("Variable not found".to_string()),
-            },
-            Expr::Lit(literal) => 
-            {
-                Ok((Val::Lit(literal.clone()), None))
-            },
             Expr::BinOp(op, left, right) => 
             {
                 Ok((op.eval(left.eval(env)?.0, right.eval(env)?.0)?, None))
-            }
-            Expr::Par(e) => 
-            {
-                e.eval(env)
-            }
-            Expr::IfThenElse(c, t, e) => 
-            match c.eval(env)?.0.get_bool()? 
-            {
-                true => (*t).eval(env),
-                false => match e 
-                {
-                    Some(e) => e.eval(env),
-                    None => Ok((Val::Lit(Literal::Unit), None)),
-                },
             },
-            Expr::Block(b) => 
+            Expr::Block(bl) => 
             {
-                b.eval(env)
+                bl.eval(env)
             },
             Expr::Call(id, params) => 
             {
@@ -139,6 +116,29 @@ impl Eval<Val> for Expr
                     retval
                 }
             },
+            Expr::Ident(id) => match env.v.get(&id)
+            {
+                Some(t) => Ok((t, env.v.get_ref(id))),
+                None => Err("Variable not found".to_string()),
+            },
+            Expr::IfThenElse(c, t, e) => 
+            match c.eval(env)?.0.get_bool()? 
+            {
+                true => (*t).eval(env),
+                false => match e 
+                {
+                    Some(e) => e.eval(env),
+                    None => Ok((Val::Lit(Literal::Unit), None)),
+                },
+            },
+            Expr::Lit(literal) => 
+            {
+                Ok((Val::Lit(literal.clone()), None))
+            },
+            Expr::Par(e) => 
+            {
+                e.eval(env)
+            }
             Expr::UnOp(u, e) => 
             {
                 u.eval(*e.clone(), env)
@@ -158,29 +158,11 @@ impl Eval<Val> for Block
             println!("be {:?}", be);
             match be 
             {
-                Statement::Let(m, id, _, e) => 
-                {
-                    // the right hand side, in the "old" env
-                    let l: Val;
-                    match e
-                    {
-                        Some(e) => l = e.eval(env)?.0,
-                        None => l = Val::UnInit
-                    }
-                    // the left hand side, for now just accept an ident
-                    env.v.alloc(id, l);
-                },
                 Statement::Assign(id, e) => 
                 {
                     // the right hand side, in the "old" env
                     let id_val = id.eval(env)?;
                     let ex = e.eval(env)?;
-                    /* for currentenv in env.iter_mut() {
-                        if currentenv.0.contains_key(&id.get_id()?){
-                            currentenv.0.insert(id.get_id()?, Some(l));
-                            break;
-                        }
-                    } */
                     let err = env.v.get(&id.to_string());
                     if err.is_none()
                     {
@@ -199,17 +181,28 @@ impl Eval<Val> for Block
                 {
                     return_val = e.eval(env)?.0;
                 },
-
+                Statement::Fn(fndecl) => 
+                {
+                    fndecl.eval(env)?;
+                },
+                Statement::Let(m, id, _, e) => 
+                {   
+                    // the right hand side, in the "old" env
+                    let l: Val;
+                    match e
+                    {
+                        Some(e) => l = e.eval(env)?.0,
+                        None => l = Val::UnInit
+                    }
+                    // the left hand side, for now just accept an ident
+                    env.v.alloc(id, l);
+                },
                 Statement::While(c, block) => 
                 {
                     while c.eval(env)?.0.get_bool()? 
                     {
                         block.eval(env)?;
                     }
-                },
-                Statement::Fn(fndecl) => 
-                {
-                    fndecl.eval(env)?;
                 },
             }
         }

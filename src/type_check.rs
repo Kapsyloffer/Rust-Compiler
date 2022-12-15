@@ -11,16 +11,20 @@ type TypeErr = String;
 
 // type check
 #[derive(Debug, Clone, PartialEq)]
-pub enum Ty {
+pub enum Ty 
+{
     Lit(Type),
     Ref(Ref),
     Mut(Box<Ty>),
 }
 
 // Helpers for Ty
-impl From<&Literal> for Ty {
-    fn from(t: &Literal) -> Self {
-        Ty::Lit(match *t {
+impl From<&Literal> for Ty 
+{
+    fn from(t: &Literal) -> Self 
+    {
+        Ty::Lit(match *t 
+        {
             Literal::Bool(_) => Type::Bool,
             Literal::Int(_) => Type::I32,
             Literal::String(_) => Type::String,
@@ -30,8 +34,8 @@ impl From<&Literal> for Ty {
 }
 
 // Helper for Op
-impl Op {
-    // Evaluate operator to literal
+impl Op
+{   
     pub fn unify(&self, l: Ty, r: Ty) -> Result<(Ty, Option<Ref>), Error> 
     {
         match self 
@@ -235,7 +239,10 @@ impl Eval<Ty> for Prog
 {
     fn eval(&self, env: &mut Env<Ty>) -> Result<(Ty, Option<Ref>), Error> 
     {
-        env.f.add_functions_unique(self.0.clone());
+        #[allow(unused_must_use)] 
+        {
+            env.f.add_functions_unique(self.0.clone());
+        }
         for _f in self.0.clone()
         {
             _f.eval(env)?;
