@@ -1,3 +1,5 @@
+use syn::token::Else;
+
 use crate::ast::*;
 use crate::common::Eval;
 use crate::env::{Env, Ref};
@@ -68,7 +70,10 @@ impl Eval<Ty> for Expr
         {
             Expr::BinOp(op, l, r) => 
             {
-                todo!()
+                let l_type = l.eval(env)?;
+                let r_type = r.eval(env)?;
+                let optype = op.unify(l_type.0, r_type.0)?;
+                Ok(optype)
             },
             Expr::Block(b) => 
             {
@@ -232,12 +237,18 @@ impl Eval<Ty> for Statement
                     let id_type = id.eval(env)?.0;
                     let m = id.eval(env)?.1;
                     let ty: Option<Ty> = env.v.get(&id.to_string());
-
-                    match env.v.de_ref(m.unwrap()) 
+                    if m.is_none()
                     {
-                        Ty::Mut(_) => {},
-                        Ty::Lit(Type::Ref(_)) => return Err("Can't assign to Reference".to_string()),
-                        _ => return Err("Can't assign to none mutable".to_string())
+                        //
+                    }
+                    else
+                    {
+                        match env.v.de_ref(m.unwrap()) 
+                        {
+                            Ty::Mut(_) => {},
+                            Ty::Lit(Type::Ref(_)) => return Err("Can't assign to Reference".to_string()),
+                            _ => return Err("Can't assign to none mutable".to_string())
+                        }
                     }
                     let e_type = e.eval(env)?; //Angels crying
                     match ty.unwrap() 

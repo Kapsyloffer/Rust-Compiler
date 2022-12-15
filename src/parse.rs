@@ -23,6 +23,7 @@ impl Parse for Literal
         {
             syn::Lit::Int(l) => Literal::Int(l.base10_parse().unwrap()),
             syn::Lit::Bool(b) => Literal::Bool(b.value),
+            syn::Lit::Str(s) => Literal::String(s.value()),
             // for now only Int and Bool are covered
             _ => unimplemented!(),
         })
