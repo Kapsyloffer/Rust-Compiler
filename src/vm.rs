@@ -1,4 +1,4 @@
-use crate::ast::{Block, Expr, FnDeclaration, Literal, Op, Prog, Statement};
+use crate::ast::*;
 use crate::common::Eval;
 use crate::env::{Env, Ref};
 use crate::error::Error;
@@ -99,17 +99,49 @@ impl Eval<Val> for Expr
                     None => Ok((Val::Lit(Literal::Unit), None)),
                 },
             },
-            Expr::Block(bl) => 
+            Expr::Block(b) => 
             {
-                todo!()
+                b.eval(env)
             },
             Expr::Call(id, params) => 
             {
-                todo!()
+                //Check if the function exists.
+                if !env.f.0.contains_key(id)
+                {
+                    return Err("Missing function".to_string())
+                }
+
+                let env_temp = env.clone();
+                let _fn = env_temp.f.0.get(id).unwrap();
+                if _fn.0.id == "println!"
+                {
+                    let mut args : Vec<Literal> = Vec::new();
+                    for arg in params.0.iter()
+                    {
+                        args.push(arg.eval(env)?.0.get_string()?);
+                    }
+                Ok((Val::Lit(_fn.1.unwrap()(args)), None))
+                }
+                else 
+                {
+                    env.v.push_scope();
+                    let mut i = 0;
+                    for arg in params.0.clone()
+                    {
+                        let arg_id = _fn.0.parameters.0[i].id.clone();
+                        let arg_val = arg.eval(env)?.0;
+                        env.v.alloc(&arg_id, arg_val.clone());
+                        i = i+1;
+                    }
+                    let b : Block = _fn.0.body.clone();
+                    let retval = b.eval(env);
+                    env.v.pop_scope();
+                    retval
+                }
             },
-            Expr::UnOp(uop, e) => 
+            Expr::UnOp(u, e) => 
             {
-                todo!()
+                u.eval(*e.clone(), env)
             },
         }
     }
@@ -212,6 +244,32 @@ impl Eval<Val> for Prog
             None => Err("Warning, function 'main' not found")?,
         }
 
+    }
+}
+
+impl UnOp
+{
+    fn eval(&self, expr: Expr, env: &mut Env<Val>) -> Result<(Val, Option<Ref>), Error> {
+        use Literal::Bool;
+        match self 
+        {
+            UnOp::Bang => 
+            {
+                Ok((Val::Lit(Bool(!expr.eval(env)?.0.get_bool()?)), None))
+            },
+            UnOp::DeRef => 
+            {
+                todo!()
+            },
+            UnOp::Mut => 
+            {
+                Ok((Val::Mut(Box::new(expr.eval(env)?.0)), None))
+            },
+            UnOp::Ref => 
+            {
+                todo!()
+            },
+        }
     }
 }
 

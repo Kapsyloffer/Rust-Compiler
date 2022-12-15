@@ -1,10 +1,9 @@
+#[allow(unused_imports)]
 use syn::token::Else;
-
 use crate::ast::*;
 use crate::common::Eval;
 use crate::env::{Env, Ref};
 use crate::error::Error;
-#[allow(unused_imports)]
 use std::convert::{From, Into};
 use std::fmt::Debug;
 
@@ -160,7 +159,34 @@ impl Eval<Ty> for Expr
             },
             Expr::UnOp(u, e) => 
             {
-                todo!()
+                let expr = (*e.clone()).eval(env)?;
+                match u 
+                {
+                    UnOp::Bang => 
+                    {
+                        unify(expr.0.clone(), Ty::Lit(Type::Bool), Ty::Lit(Type::Bool))
+                    },
+                    UnOp::DeRef => 
+                    {
+                        match expr.0 
+                        {
+                            Ty::Lit(Type::Ref(e)) => Ok((Ty::Lit(*e), None)),
+                            _ => Err(format!("Expected Ty::Lit; got {:?}", expr.0))
+                        }
+                    },
+                    UnOp::Mut => 
+                    {
+                        Ok((Ty::Mut(Box::new(expr.0)), None))
+                    },
+                    UnOp::Ref =>
+                    {
+                         match expr.0 
+                        {
+                            Ty::Lit(type_) => Ok((Ty::Lit(Type::Ref(Box::new(type_))), None)),
+                            _ => Err(format!("Expected Ty::Lit; got {:?}", expr.0))
+                        }
+                    },
+                }
             },
         }
     }
@@ -237,11 +263,7 @@ impl Eval<Ty> for Statement
                     let id_type = id.eval(env)?.0;
                     let m = id.eval(env)?.1;
                     let ty: Option<Ty> = env.v.get(&id.to_string());
-                    if m.is_none()
-                    {
-                        //
-                    }
-                    else
+                    if !m.is_none()
                     {
                         match env.v.de_ref(m.unwrap()) 
                         {
@@ -251,25 +273,28 @@ impl Eval<Ty> for Statement
                         }
                     }
                     let e_type = e.eval(env)?; //Angels crying
-                    match ty.unwrap() 
+                    if !ty.is_none()
                     {
-                        Ty::Lit(Type::Unit) => 
-                        { 
-                            match id 
-                            {
-                                Expr::Ident(key) => {env.v.alloc(&key, e_type.0);},
-                                _ => unreachable!()
-                            }
-                        },
-                        _ => 
+                        match ty.unwrap() 
                         {
-                            let res1 = id.eval(env);
-                            let res2 = e.eval(env);
-                            if res1.is_err() || res2.is_err() || unify(res1.clone()?.0, res2?.0, res1.clone()?.0).is_err() 
+                            Ty::Lit(Type::Unit) => 
+                            { 
+                                match id 
+                                {
+                                    Expr::Ident(key) => {env.v.alloc(&key, e_type.0);},
+                                    _ => unreachable!()
+                                }
+                            },
+                            _ => 
                             {
-                                return Err("Error in assignment".to_string())
-                            }
-                        },
+                                let res1 = id.eval(env);
+                                let res2 = e.eval(env);
+                                if res1.is_err() || res2.is_err() || unify(res1.clone()?.0, res2?.0, res1.clone()?.0).is_err() 
+                                {
+                                    return Err("Error in assignment".to_string())
+                                }
+                            },
+                        }
                     }
                     (Ty::Lit(Type::Unit), None)
                 },

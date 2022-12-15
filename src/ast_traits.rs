@@ -126,11 +126,11 @@ impl fmt::Display for Type
     {
         let s = match self
         {
-            Type::I32 => "i32",
-            Type::Bool => "bool",
-            Type::Unit => "()",
-            Type::String => "String",
-            Type::Ref(e) => "",
+            Type::I32 => "i32".to_string(),
+            Type::Bool => "bool".to_string(),
+            Type::Unit => "()".to_string(),
+            Type::String => "String".to_string(),
+            Type::Ref(e) => format!("&{}", *e.clone()),
         };
         write!(f, "{}", s)
     }
@@ -149,13 +149,14 @@ impl fmt::Display for UnOp
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
     {
-        match self
+        let s = match self
         {
-            UnOp::Bang => todo!(),
-            UnOp::DeRef => todo!(),
-            UnOp::Mut => todo!(),
-            UnOp::Ref => todo!(),
-        }
+            UnOp::Bang => format!("!"),
+            UnOp::DeRef => format!("*"),
+            UnOp::Mut => format!("mut "),
+            UnOp::Ref => format!("&"),
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -187,8 +188,8 @@ impl fmt::Display for Expr
             {
                 format!("if {} {{\n{}}}\n else\n {{ {:?} }}", c, &f, e)
             },
-            Expr::Block(b) => unimplemented!(),
-            Expr::UnOp(_, _) => unimplemented!(),
+            Expr::Block(bl) => format!("{}", bl),
+            Expr::UnOp(uop, e) => format!("{}{}", uop, e),
             //Expr::Not(c) => format!("!{}", c),
         };
         write!(f, "{}", s)
