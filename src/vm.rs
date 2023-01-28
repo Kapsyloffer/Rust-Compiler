@@ -1,6 +1,7 @@
 use crate::ast::*;
-use crate::common::Eval;
+use crate::common::*;
 use crate::env::{Env, Ref};
+use crate::intrinsics::vm_println;
 use crate::error::Error;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -219,6 +220,7 @@ impl Eval<Val> for FnDeclaration
 {
     fn eval(&self, env: &mut Env<Val>) -> Result<(Val, Option<Ref>), Error> 
     {
+        let r = env.f.add_functions_unique(vec![self.clone()]);
         Ok((Val::Lit(Literal::Unit), None))
     }
 }
@@ -227,18 +229,38 @@ impl Eval<Val> for Prog
 {
     fn eval(&self, env: &mut Env<Val>) -> Result<(Val, Option<Ref>), Error> 
     {
-        for func in self.0.clone()
+        //env.f.add_functions_unique(self.0.clone());
+        let mut mainfn: Option<FnDeclaration> = None;
+        let (print, intrinsic) = vm_println();
+        env.f.0.insert(print.id.clone(), (print, Some(intrinsic)));
+
+        for _fn in self.0.clone()
         {
-            func.eval(env)?;
-        }
-        match env.f.0.get("main") 
-        {
-            Some(_f) => Err("Ok")?,
-            None => Err("Warning, function 'main' not found")?,
+            if _fn.id == "main"
+            {
+                if _fn.parameters.0.is_empty()
+                {
+                    mainfn = Some(_fn.clone());
+                }
+                else
+                {
+                    return Err("Main doesn't support arguments.".to_string())
+                }
+            }
+            _fn.eval(env)?;
         }
 
+        if mainfn.is_none()
+        {
+            Err("Main not found".to_string())
+        }
+        else
+        {
+            mainfn.unwrap().body.eval(env)
+        }
     }
 }
+
 
 impl UnOp
 {
