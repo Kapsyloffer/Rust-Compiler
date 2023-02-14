@@ -1,18 +1,4 @@
 # SOS
-## Literal
-
-### Variable assignment
-
-```math
-\frac{}{ (v, s) \rightarrow v}
-```
-
-### Variable lookup
-
-```math
-\frac{}{ (x ,s) \rightarrow s(x)}
-```
-
 ## Block
 
 Several lines of code to be executed withing måsvingar {}
@@ -180,7 +166,7 @@ If [condition], if the condition is True, do Then. Else do nada
 If [condition], if the condition is True, do This, else do that.
 
 ```math
-\frac{(v,s) \rightarrow v^\prime \space (B_1,s) \rightarrow s^\prime \space (B_2,s) \rightarrow s^{\prime\prime}}{ (\text{If } v \space {B_1} \space else \space {B_2},s) \rightarrow s^{\prime\prime}}
+\frac{(v, s) \rightarrow v^\prime \space (B_1, s) \rightarrow s^\prime \space (B_2, s) \rightarrow s^{\prime\prime}}{ (\text{If } v \space {B_1} \space else \space {B_2}, s) \rightarrow s^{\prime\prime}}
 ```
 ## Parentheses
 
